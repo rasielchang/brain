@@ -1,0 +1,16 @@
+# Local working memory and credentials never belong in the public source tree.
+/.brain/
+/.env
+/.env.*
+/PORTFOLIO.md
+/daily/
+/weekly/
+/projects/
+/inbox/
+/reminders.md
+__pycache__/
+*.py[cod]
+.venv/
+.DS_Store
+*.log
+dist/

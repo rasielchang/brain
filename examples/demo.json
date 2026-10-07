@@ -1,0 +1,107 @@
+{
+  "config": {
+    "version": 1,
+    "owner": {
+      "name": "Alex",
+      "asana_user": "demo-user",
+      "asana_workspace": "demo-workspace"
+    },
+    "timezone": "UTC",
+    "language": "en",
+    "providers": {},
+    "projects": [
+      {
+        "id": "atlas",
+        "name": "Atlas",
+        "role": "build"
+      },
+      {
+        "id": "studio",
+        "name": "Studio",
+        "role": "monitor"
+      }
+    ],
+    "weekly_focus": {
+      "1": [
+        "atlas"
+      ]
+    },
+    "routines": [
+      {
+        "name": "Write",
+        "weekdays": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    ],
+    "non_working_dates": []
+  },
+  "snapshot": {
+    "schema_version": 1,
+    "collected_at": "2026-01-12T08:30:00+00:00",
+    "demo": true,
+    "projects": [
+      {
+        "id": "atlas",
+        "name": "Atlas",
+        "role": "build",
+        "tasks": [
+          {
+            "gid": "demo-task",
+            "name": "Preview export for customer testing",
+            "completed": false,
+            "due_on": "2026-01-12",
+            "assignee": {
+              "gid": "demo-user",
+              "name": "Alex"
+            },
+            "permalink_url": "https://example.com/tasks/export",
+            "notes": "Preview build delivered; waiting for customer feedback. The original due date is the handoff date."
+          }
+        ],
+        "meetings": [
+          {
+            "created_at": "2026-01-12T08:00:00Z",
+            "text": "Preview delivered. Customer acceptance is still pending."
+          }
+        ],
+        "repos": [
+          {
+            "name": "example/atlas",
+            "url": "https://example.com/repos/atlas",
+            "commits": [
+              {
+                "id": "demo-commit",
+                "title": "Add export preview",
+                "committed_date": "2026-01-12T07:00:00Z",
+                "web_url": "https://example.com/commits/preview"
+              }
+            ],
+            "merge_requests": []
+          }
+        ]
+      },
+      {
+        "id": "studio",
+        "name": "Studio",
+        "role": "monitor",
+        "tasks": [],
+        "meetings": [
+          {
+            "created_at": "2026-01-09T09:00:00Z",
+            "text": "Design team is preparing the prototype; no engineering work is expected this week."
+          }
+        ],
+        "repos": []
+      }
+    ],
+    "assignments": [],
+    "limits": [
+      "Fictional offline fixture. No real API requests or AI calls."
+    ]
+  }
+}

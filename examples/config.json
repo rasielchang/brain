@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "owner": {
+    "name": "Your name",
+    "asana_user": "YOUR_USER_GID",
+    "asana_workspace": "YOUR_WORKSPACE_GID"
+  },
+  "timezone": "UTC",
+  "language": "en",
+  "providers": {
+    "asana": {
+      "base_url": "https://app.asana.com/api/1.0",
+      "credential": {
+        "env": "ASANA_TOKEN"
+      }
+    },
+    "gitlab": {
+      "base_url": "https://gitlab.com/api/v4",
+      "credential": {
+        "env": "GITLAB_TOKEN"
+      }
+    }
+  },
+  "projects": [
+    {
+      "id": "example",
+      "name": "Example project",
+      "role": "build",
+      "active": true,
+      "asana_project": "YOUR_PROJECT_GID",
+      "asana_roots": [],
+      "meeting_tasks": [],
+      "gitlab_projects": [
+        "your-group/your-repo"
+      ],
+      "session_paths": []
+    }
+  ],
+  "weekly_focus": {
+    "1": [
+      "example"
+    ],
+    "3": [
+      "example"
+    ]
+  },
+  "routines": [
+    {
+      "name": "Write",
+      "weekdays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    }
+  ],
+  "non_working_dates": []
+}
