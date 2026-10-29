@@ -17,6 +17,8 @@ DEFAULT = {
     "weekly_focus": {},
     "routines": [{"name": "Write", "weekdays": [1, 2, 3, 4, 5]}],
     "non_working_dates": [],
+    "sessions": {"enabled": False, "sources": []},
+    "notifications": {"enabled": False, "command": []},
 }
 
 
@@ -44,6 +46,28 @@ def validate(config):
     for day, ids in config.get("weekly_focus", {}).items():
         if day not in {str(i) for i in range(1, 8)} or not isinstance(ids, list) or any(p not in seen for p in ids):
             raise BrainError("weekly_focus maps weekdays 1–7 to configured project ids.")
+    settings = config.get("sessions", {})
+    if not isinstance(settings, dict) or not isinstance(settings.get("enabled", False), bool):
+        raise BrainError("sessions needs a boolean enabled field.")
+    sources = settings.get("sources", [])
+    if not isinstance(sources, list) or (settings.get("enabled") and not sources):
+        raise BrainError("Enabled sessions need explicitly approved sources.")
+    for source in sources:
+        if (not isinstance(source, dict) or source.get("tool") not in ("codex", "claude")
+                or not isinstance(source.get("path"), str) or not source["path"]
+                or not Path(source["path"]).expanduser().is_absolute()):
+            raise BrainError("Each session source needs a tool and absolute/tilde directory path.")
+        folder = Path(source["path"]).expanduser().resolve()
+        if folder in (Path('/'), Path.home(), Path.home().parent):
+            raise BrainError("Approve transcript directories, not a whole home or filesystem.")
+    notification = config.get("notifications", {})
+    if not isinstance(notification, dict) or not isinstance(notification.get("enabled", False), bool):
+        raise BrainError("notifications needs a boolean enabled field.")
+    if notification.get("enabled"):
+        command = notification.get("command")
+        if (not isinstance(command, list) or not command or not all(isinstance(x, str) and x for x in command)
+                or not Path(command[0]).is_absolute()):
+            raise BrainError("Notification command must be an argv array with an absolute executable, without credentials.")
     return config
 
 

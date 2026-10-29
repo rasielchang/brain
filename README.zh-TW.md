@@ -60,7 +60,7 @@ python3 bin/brain.py brief --agent codex
 - Asana 保存任務與承諾，GitLab 提供工程證據；Brain 保存本機判斷、提醒與來源。
 - `.brain/`、日報、週報、專案記憶與收件匣預設不進 Git。
 - 內建 Python API 整合只有讀取功能。外部任務更新需要使用者授權和另外可用的寫入工具；沒有工具時會留下草稿，不能冒稱已同步。
-- 專案對話只在使用者指定路徑後，由互動 agent 查閱；不會自動掃整台電腦。
+- 對話掃描預設關閉；明確指定來源目錄後才掃描，不會自動掃整台電腦。
 - 到期日不直接等於今天急件；MR 合併、正式部署、交測、驗收分別追蹤。
 
 ## 每日自動執行
@@ -69,6 +69,14 @@ python3 bin/brain.py brief --agent codex
 
 `python3 bin/brain.py launchd` 只產生 macOS 排程檔供檢查，不直接安裝。macOS／Linux 的設定與停止方式見[排程文件](docs/automation.md)。
 
-目前 v0.1 包含五個 Skills、Asana／GitLab 唯讀整合、離線示範與排程工具。LINE webhook、Web 介面、GitHub 資料整合、自動寫任務與自動解析對話紀錄尚未實作。
+目前包含五個 Skills、Asana／GitLab 唯讀整合、離線示範、排程工具，以及選用的 Codex／Claude 對話掃描。LINE webhook、Web 介面、GitHub 資料整合與自動寫任務尚未實作。
+
+## 對話接續與公開同步
+
+[對話掃描](docs/sessions.md)保留每個 session 的精確身分、來源變動、待核對隊列與工作卡。同一專案可以同時有多件工作；關視窗、回覆完成或來源消失，都不會自動把任務標成完成。早報由程式附上掃描覆蓋與缺漏，語意核對仍需讀證據。
+
+[通知 adapter](docs/automation.md)使用固定 request ID 與持久回條處理失敗重試；收到通知不等於本人已讀。`launchd --hour 7 --minute 0 --weekdays` 可產生平日早上七點的排程檔。
+
+[公開匯出 script](docs/public-export.md)先檢查明列的程式、虛構測試與通用文件，再於隔離副本驗證，最後才 commit／push。私人日報、工作卡、對話、憑證與私人 Git 歷史不會整批搬入公開版。重跑沒有功能差異就不建立新 commit；有尚未整理的私人程式變更會停下來提示。
 
 MIT 授權。歡迎分享工作流程與改進；提交時請使用虛構資料。

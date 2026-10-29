@@ -263,7 +263,7 @@ class ReliabilityTests(unittest.TestCase):
             root = Path(folder)
             (root / ".brain").mkdir()
             output = root / "daily.md"
-            expected = "# Today · 2026-01-12\n\n" + "Synthetic evidence; acceptance is unknown.\n" * 8
+            expected = render(fixture["snapshot"], fixture["config"], "today")
             class Success:
                 returncode = 0
                 def __init__(self, command, **kwargs):

@@ -6,9 +6,10 @@ from pathlib import Path
 import plistlib
 import shutil
 import sys
+import tempfile
 from zoneinfo import ZoneInfo
 
-from . import __version__
+from . import __version__, continuity, notifications, sessions
 from .collect import collect
 from .config import DEFAULT, load
 from .reports import render
@@ -69,19 +70,32 @@ def read_snapshot(root, config):
     return snapshot
 
 
-def report(root, config, snapshot, kind, agent=None):
+def report(root, config, snapshot, kind, agent=None, packet=None, not_before=None):
     date = snapshot["collected_at"][:10]
     name = f"radar-{date}" if kind == "radar" else date
     folder = "daily" if kind == "today" else "weekly"
     # Deterministic refreshes never overwrite interactive conclusions in the main report.
     source_path = root / folder / (name + ".source.md")
     destination = root / folder / (name + ".md")
+    if kind == "today" and packet:
+        continuity.coverage(packet, date, config.get("timezone", "UTC"), not_before)
     atomic_write(source_path, render(snapshot, config, kind))
+    if kind == "today" and packet:
+        continuity.attach(source_path, packet, date, config.get("timezone", "UTC"), not_before)
     if agent:
-        generate(root, SOURCE, snapshot, config, kind, destination, agent)
+        if kind == "today" and packet:
+            with tempfile.TemporaryDirectory(prefix="report-", dir=root / ".brain") as folder:
+                staged = Path(folder) / "report.md"
+                generate(root, SOURCE, snapshot, config, kind, staged, agent)
+                continuity.attach(staged, packet, date, config.get("timezone", "UTC"), not_before)
+                atomic_write(destination, staged.read_text())
+        else:
+            generate(root, SOURCE, snapshot, config, kind, destination, agent)
         print(f"Generated {destination}")
     else:
         print(f"Updated {source_path}; use the matching skill for decisions and prioritization.")
+
+    return destination if agent else source_path
 
 
 def demo(root):
@@ -94,13 +108,15 @@ def demo(root):
     print(f"\nOffline demo written to {output}; no network, credentials, or model calls.")
 
 
-def launchd(root, hour, minute, agent):
+def launchd(root, hour, minute, agent, weekdays=False):
     command = [sys.executable, str(SOURCE / "bin/brain.py"), "--root", str(root), "morning"]
     if agent:
         command += ["--agent", agent]
     value = {"Label": "dev.brain.morning", "ProgramArguments": command,
              "WorkingDirectory": str(root), "StartCalendarInterval": {"Hour": hour, "Minute": minute},
              "StandardOutPath": str(root / ".brain/morning.log"), "StandardErrorPath": str(root / ".brain/morning-error.log")}
+    if weekdays:
+        value["StartCalendarInterval"] = [{"Weekday": day, "Hour": hour, "Minute": minute} for day in range(1, 6)]
     atomic_write(root / ".brain/dev.brain.morning.plist", plistlib.dumps(value).decode())
     print("Generated .brain/dev.brain.morning.plist. Review before installing; no schedule was activated.")
 
@@ -121,6 +137,14 @@ def main(argv=None):
     p.add_argument("--hour", type=int, choices=range(24), default=8)
     p.add_argument("--minute", type=int, choices=range(60), default=30)
     p.add_argument("--agent", choices=("codex", "claude"))
+    p.add_argument("--weekdays", action="store_true", help="schedule Monday–Friday only")
+    p = commands.add_parser("sessions", help="review opted-in local conversation sources")
+    sub = p.add_subparsers(dest="session_action", required=True)
+    sub.add_parser("scan")
+    view = sub.add_parser("inspect", help="print selected excerpts locally; never execute them")
+    view.add_argument("keys", nargs="+")
+    review = sub.add_parser("review", help="record an exact-snapshot evidence receipt")
+    review.add_argument("file", type=Path)
     args = parser.parse_args(argv)
     root = args.root.expanduser().resolve()
     try:
@@ -136,16 +160,40 @@ def main(argv=None):
                 print("Agent CLIs: " + ", ".join(a for a in ("codex", "claude") if shutil.which(a)))
                 print("Credentials and live API connectivity were not tested. Refresh verifies configured providers.")
             elif args.command == "launchd":
-                launchd(root, args.hour, args.minute, args.agent)
+                launchd(root, args.hour, args.minute, args.agent, args.weekdays)
+            elif args.command == "sessions":
+                if not config.get("sessions", {}).get("enabled"):
+                    raise BrainError("Session reading is disabled. Explicitly configure sources first.")
+                with run_lock(root):
+                    packet = continuity.scan(root, config)
+                    state = root / ".brain/sessions"
+                    if args.session_action == "inspect":
+                        print(json.dumps(sessions.inspect(state, args.keys), ensure_ascii=False))
+                    elif args.session_action == "review":
+                        sessions.apply_reviews(state, json.loads(args.file.read_text()), root)
+                        packet = continuity.scan(root, config)
+                    if args.session_action != "inspect":
+                        print(json.dumps({"coverage": packet["coverage"], "pending": packet["pending"]}))
+                    if packet["discovery_errors"] or packet["coverage"].get("malformed_lines"):
+                        raise BrainError("Session scan has source errors; inspect the private review packet.")
             else:
                 with run_lock(root):
+                    started = dt.datetime.now(dt.timezone.utc).timestamp()
+                    packet = continuity.scan(root, config) if args.command in ("brief", "morning") else None
                     snapshot = read_snapshot(root, config) if args.command == "brief" else refresh(root, config)
                     if args.command == "refresh":
                         print("Updated .brain/snapshot.json and PORTFOLIO.md.")
                     elif args.command == "brief":
-                        report(root, config, snapshot, args.kind, args.agent)
+                        report(root, config, snapshot, args.kind, args.agent, packet, started)
+                        if packet and (packet["discovery_errors"] or packet["coverage"].get("malformed_lines")):
+                            raise BrainError("Report records session source errors; inspect the private review packet.")
                     else:
-                        report(root, config, snapshot, "today", args.agent)
+                        path = report(root, config, snapshot, "today", args.agent, packet, started)
+                        if packet and (packet["discovery_errors"] or packet["coverage"].get("malformed_lines")):
+                            raise BrainError("Report records session source errors; delivery withheld until repaired.")
+                        result = notifications.deliver(root, config, path, snapshot["collected_at"][:10])
+                        if result['state'] != 'disabled':
+                            print("Notification: " + result['state'])
                         if dt.date.fromisoformat(snapshot["collected_at"][:10]).isoweekday() == 1:
                             for kind in ("weekly", "radar"):
                                 report(root, config, snapshot, kind, args.agent)

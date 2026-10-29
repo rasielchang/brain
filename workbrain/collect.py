@@ -16,25 +16,43 @@ def collect(config, now=None, factory=API):
     now = now or dt.datetime.now(ZoneInfo(config.get("timezone", "UTC")))
     clients = {}
 
-    def client(name):
+    def client(name, kind=None):
+        kind = kind or name
         if name not in clients:
             spec = config.get("providers", {}).get(name)
             if not spec:
                 raise BrainError(f"Configure providers.{name} before enabling its projects.")
-            default = "https://app.asana.com/api/1.0" if name == "asana" else "https://gitlab.com/api/v4"
-            clients[name] = factory(spec.get("base_url", default), credential(spec.get("credential")), name)
+            default = "https://app.asana.com/api/1.0" if kind == "asana" else "https://gitlab.com/api/v4"
+            clients[name] = factory(spec.get("base_url", default), credential(spec.get("credential")), kind)
         return clients[name]
 
     projects = []
-    excluded_tasks, excluded_projects = set(), set()
+    excluded_tasks, excluded_projects, excluded_tags = set(), set(), set()
     for project in config["projects"]:
         if not active(project):
-            excluded_projects.add(str(project.get("asana_project", "")))
+            if project.get("asana_contract_tag"):
+                excluded_tags.add(str(project["asana_contract_tag"]))
+            else:
+                excluded_projects.add(str(project.get("asana_project", "")))
             excluded_tasks.update(map(str, project.get("asana_roots", [])))
             continue
         tasks, meetings, repos = [], [], []
         if project.get("asana_project") or project.get("asana_roots"):
             tasks = task_tree(client("asana"), project.get("asana_project"), project.get("asana_roots", []))
+        tag = project.get("asana_contract_tag")
+        if tag:
+            by_id = {t["gid"]: t for t in tasks}
+            def belongs(task):
+                visited = set()
+                while task:
+                    if str(tag) in {str(t["gid"]) for t in task.get("tags", [])}:
+                        return True
+                    if task["gid"] in visited:
+                        raise BrainError("Asana parent cycle while filtering a contract.")
+                    visited.add(task["gid"])
+                    task = by_id.get((task.get("parent") or {}).get("gid"))
+                return False
+            tasks = [t for t in tasks if belongs(t)]
         for gid in project.get("meeting_tasks", []):
             stories = client("asana").all(f"/tasks/{gid}/stories", {
                 "opt_fields": "text,created_at,created_by.name,resource_subtype"})
@@ -42,7 +60,7 @@ def collect(config, now=None, factory=API):
                             if story.get("resource_subtype") == "comment_added")
         for pid in project.get("gitlab_projects", []):
             prefix = "/projects/" + urllib.parse.quote(str(pid), safe="")
-            gl = client("gitlab")
+            gl = client(project.get("gitlab_provider", "gitlab"), "gitlab")
             repo = gl.one(prefix)
             commits = gl.all(prefix + "/repository/commits", {
                 "since": (now - dt.timedelta(days=7)).isoformat(), "until": now.isoformat()})
@@ -67,17 +85,18 @@ def collect(config, now=None, factory=API):
             visited = set()
             while task:
                 gid = task["gid"]
-                if gid in excluded_tasks or any(p["gid"] in excluded_projects for p in task.get("projects", [])):
+                if (gid in excluded_tasks or any(p["gid"] in excluded_projects for p in task.get("projects", []))
+                        or any(str(t["gid"]) in excluded_tags for t in task.get("tags", []))):
                     return True
                 if gid in visited:
                     raise BrainError("Asana parent cycle; cannot verify paused-project scope.")
                 visited.add(gid)
                 parent = task.get("parent")
-                if not parent or not (excluded_tasks or excluded_projects - {""}):
+                if not parent or not (excluded_tasks or excluded_projects - {""} or excluded_tags):
                     return False
                 pgid = parent["gid"]
                 if pgid not in ancestry:
-                    ancestry[pgid] = client("asana").one(f"/tasks/{pgid}", {"opt_fields": "parent,projects"})
+                    ancestry[pgid] = client("asana").one(f"/tasks/{pgid}", {"opt_fields": "parent,projects,tags.gid"})
                 task = ancestry[pgid]
             return False
 

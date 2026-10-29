@@ -56,5 +56,13 @@
       ]
     }
   ],
-  "non_working_dates": []
+  "non_working_dates": [],
+  "sessions": {
+    "enabled": false,
+    "sources": []
+  },
+  "notifications": {
+    "enabled": false,
+    "command": []
+  }
 }

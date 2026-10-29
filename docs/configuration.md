@@ -15,6 +15,10 @@ placeholder IDs must be replaced before enabling its integrations.
 | `asana_project` | Optional Asana project GID, including its nested task trees |
 | `asana_roots` | Root task GIDs for projects without their own Asana project |
 | `meeting_tasks` | Task GIDs whose comments carry meeting progress; retains the latest 20 comments per project in the snapshot |
+| `asana_contract_tag` | Optional tag GID for one contract on a shared Asana board; tagged tasks and their descendants form this project |
+| `gitlab_provider` | Optional named provider entry for this project, so separate repositories can use separate credentials |
+| `sessions` | Explicitly enabled transcript directories; see [continuity](sessions.md) |
+| `notifications` | Explicitly enabled argv adapter; see [automation](automation.md) |
 | `gitlab_projects` | GitLab numeric IDs or `group/repository` paths |
 | `session_paths` | Optional project paths approved for interactive session inspection; the collector does not read them |
 | `weekly_focus` | Weekday strings `1`–`7` mapped to project IDs; multiple projects per day are supported |

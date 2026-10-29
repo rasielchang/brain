@@ -6,6 +6,7 @@ import signal
 import subprocess
 import tempfile
 
+from .continuity import validate_today
 from .storage import BrainError, atomic_write
 
 
@@ -27,7 +28,7 @@ def generate(root, source_root, snapshot, config, kind, destination, agent, time
               "session-reading, and interactive steps. List questions instead of inventing answers. "
               f"Start exactly with '# {heading} · {date}'. Use the configured language for the body. "
               "Include every active project, all today's focus projects, routines, and evidence limitations.\n\n"
-              + skill + "\n\nDATA\n" + json.dumps({"config": {k: v for k, v in config.items() if k != "providers"}, "snapshot": snapshot}, ensure_ascii=False))
+              + skill + "\n\nDATA\n" + json.dumps({"config": {k: v for k, v in config.items() if k not in ("providers", "sessions", "notifications")}, "snapshot": snapshot}, ensure_ascii=False))
     with tempfile.TemporaryDirectory(prefix="agent-", dir=Path(root) / ".brain") as folder:
         output = Path(folder) / "answer.md"
         if agent == "codex":
@@ -53,4 +54,6 @@ def generate(root, source_root, snapshot, config, kind, destination, agent, time
         result = result.strip()
         if not result.startswith(f"# {heading} · {date}") or len(result) < 200:
             raise BrainError("AI output was empty or lacked the report header; existing report kept.")
+        if kind == "today":
+            validate_today(result + "\n", config, date)
         atomic_write(destination, result + "\n")

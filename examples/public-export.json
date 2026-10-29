@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "source_root": "..",
+  "target_repo": "/path/to/separate/public-brain",
+  "expected_origin": "https://github.com/YOUR_ACCOUNT/brain.git",
+  "branch": "main",
+  "author": {"name": "YOUR_ACCOUNT", "email": "YOUR_GITHUB_NOREPLY_ADDRESS"},
+  "private_markers": ["YOUR_PRIVATE_CLIENT_NAME"],
+  "reviewed_inputs": [{"path": "bin/private-feature.py", "sha256": "REVIEWED_INPUT_SHA256"}],
+  "files": [{"source": "public-export/workbrain/feature.py", "target": "workbrain/feature.py", "base_sha256": null}]
+}

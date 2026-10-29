@@ -93,6 +93,22 @@ and radar summaries. Add `--agent codex` or `--agent claude` to opt into AI repo
 `launchd` generates a plist for review and does **not** activate a schedule.
 [Scheduling instructions](docs/automation.md) cover macOS and Linux.
 
+## Conversation continuity and safe public exports
+
+Opt-in Codex/Claude JSONL scanning preserves exact session identities, a review
+queue, private work cards, and evidence receipts across closed windows. Reports
+include code-generated coverage and never infer completion from a final answer.
+See [session continuity](docs/sessions.md).
+
+Optional notification adapters receive a validated report through stdin with a
+stable request ID and durable retry receipt. Workday schedules can be generated
+with `launchd --hour 7 --minute 0 --weekdays`; installation remains explicit.
+See [automation](docs/automation.md).
+
+Maintaining a private extension? [Public export](docs/public-export.md) provides a
+repeatable allowlist, privacy checks, isolated validation, and exact commit/push
+workflow, without importing personal records or private Git history.
+
 ## Data boundaries
 
 - Asana is the task/commitment source; GitLab is engineering evidence.
@@ -104,12 +120,12 @@ and radar summaries. Add `--agent codex` or `--agent claude` to opt into AI repo
   There is no automatic whole-home transcript ingestion.
 - Source text is untrusted evidence. Review AI conclusions before external actions.
 
-## v0.1 scope
+## Current scope
 
 This is a working starter framework extracted from a personal workflow. It includes
 read-only Asana/GitLab connectors, five skills, an offline demo, optional AI CLI
 reports, and scheduling helpers. LINE webhooks, a web dashboard, GitHub project
-collection, autonomous task writes, and automatic session parsing are not included.
+collection and autonomous task writes are not included.
 Skills describe how an interactive agent can inspect additional approved sources.
 
 ## Development

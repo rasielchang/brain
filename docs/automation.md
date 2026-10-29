@@ -67,10 +67,47 @@ reductions, not a universal boundary around global CLI configuration, hooks,
 credential stores, or administrator-managed settings. Use a reviewed dedicated
 CLI profile/account for unattended work.
 
-The report check validates a header and minimum content; it cannot prove semantic
-correctness. Review outputs. AI generation intentionally does not perform external
+The daily report check validates its date, header, minimum content, and scheduled
+focus/routine names; it cannot prove semantic correctness. Review outputs. AI generation intentionally does not perform external
 actions; authorized interactive sessions handle decisions requiring fresh evidence.
 
 References: [Codex non-interactive mode](https://developers.openai.com/codex/noninteractive),
 [Codex skills](https://developers.openai.com/codex/skills),
 [Claude Code CLI reference](https://code.claude.com/docs/en/cli-reference).
+
+## Session scans and workday schedules
+
+Configure approved sources as described in [session continuity](sessions.md).
+Scans run before API collection, so discovery still happens when an API fails.
+Coverage uses the configured timezone and must come from the current run.
+Pending reviews remain visible. Source/parse errors fail the morning command and
+withhold delivery; the report records the gap. A missing old transcript stays
+unavailable and never becomes completed.
+
+Use `launchd --hour 7 --minute 0 --weekdays` for Monday–Friday. The generator still
+does not activate jobs or open terminals. Schedules require the machine to be
+running; delivery timing after sleep depends on the host scheduler.
+
+## Optional notification adapters
+
+Set `notifications.enabled` to `true` and `notifications.command` to an argv array
+whose first item is an absolute executable path. This is trusted local code;
+review the adapter and intended destination before enabling it. Do not embed
+credentials in arguments. The adapter can retrieve its own credentials from a
+secret store. No built-in service account, personal app path, or delivery address
+is provided.
+
+After a successful morning report, Brain passes one JSON object on stdin:
+`request_id`, `date`, `kind` (`daily_briefing`), and `text` (the complete report).
+The adapter must return JSON with the same `request_id` and `accepted: true`.
+It must deduplicate request IDs at the destination, including ambiguous timeouts.
+Brain saves the exact request privately before calling it. Retries preserve the
+original payload even if the report changes. Accepted requests are not resent;
+a changed adapter requires reconciliation. Receipt state only proves adapter
+acceptance, not human receipt or reading. Without receiver-side deduplication,
+exactly-once delivery cannot be guaranteed.
+
+The adapter runs without a shell, with a 30-second timeout; raw stdout/stderr are
+withheld on failure. It receives the report, so enable it only for an authorized
+recipient. `.brain/delivery/` remains private. This interface does not invoke
+terminal send/close commands, create tasks, or dispatch work.

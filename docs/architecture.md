@@ -57,9 +57,15 @@ engine. Only the bundled API client's GET-only behavior is enforced in Python.
 Interactive tools inherit their host application's permissions. For unattended
 use, review those permissions and prefer a dedicated agent profile.
 
-## Explicitly outside v0.1
+## Optional continuity and delivery
 
-No web server, vector store, webhook receiver, task-write API, automatic session
-parser, or workflow queue is included. No production deployment is performed.
-Session inspection and meeting-document handling are interactive workflows over
-user-approved sources. Additional connectors can extend the snapshot later.
+Explicitly approved transcript directories feed a metadata-only session inventory,
+review queue, and exact-version receipts. Work cards stay private under projects.
+The morning flow scans before collection, attaches deterministic coverage, then
+calls an explicitly configured notification adapter only after successful checks.
+No transcript content is automatically supplied to the headless report agent.
+
+No web server, vector store, webhook receiver, task-write API, or production
+deployment is included. Session judgment and meeting-document handling remain
+interactive workflows over user-approved sources. Public exports use a separate
+allowlisted source tree and never merge private Git history.

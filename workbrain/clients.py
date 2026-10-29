@@ -99,7 +99,7 @@ class API:
         raise BrainError(f"{self.provider}: pagination limit exceeded; incomplete results rejected.")
 
 
-TASK_FIELDS = "name,notes,completed,assignee.name,due_on,modified_at,num_subtasks,parent.name,permalink_url"
+TASK_FIELDS = "tags.gid,name,notes,completed,assignee.name,due_on,modified_at,num_subtasks,parent.name,permalink_url"
 
 
 def task_tree(api, project_id=None, roots=()):

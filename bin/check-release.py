@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-PRIVATE = (".brain/", "daily/", "weekly/", "projects/", "inbox/", ".playwright-mcp/", ".env")
+PRIVATE = (".local/", ".aws/", ".codex/", ".brain/", "daily/", "weekly/", "projects/", "inbox/", ".playwright-mcp/", ".env")
 PRIVATE_FILES = {"PORTFOLIO.md", "reminders.md"}
 RULES = {
     "private key": re.compile(rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
